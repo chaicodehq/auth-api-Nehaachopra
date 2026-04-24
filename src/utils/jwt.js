@@ -29,6 +29,9 @@ import jwt from 'jsonwebtoken';
  */
 export function signToken(payload) {
   // Your code here
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN
+  })
 }
 
 /**
@@ -67,4 +70,23 @@ export function signToken(payload) {
  */
 export function verifyToken(token) {
   // Your code here
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);  
+    return payload;
+  }
+  catch(err) {
+    if (err.name === 'JsonWebTokenError') {
+      if (err.message === "invalid signature") {
+        throw new Error('Wrong secret or tampered token')
+      }
+      if (err.message === "jwt malformed") {
+        throw new Error('Invalid token format')
+      }
+    }
+
+    if (err.name === 'TokenExpiredError') {
+      throw new Error('Token past expiration time')
+    }
+  }
+
 }

@@ -14,6 +14,24 @@ import { signToken } from '../utils/jwt.js';
 export async function register(req, res, next) {
   try {
     // Your code here
+    const {email, name, password} = req.body;
+
+    const existingUser = await User.findOne({email});
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: { message: "Email already exists" }
+      })
+    }
+
+    const userObj = await User.create({name, email, password});
+
+    const user = userObj.toObject();
+    delete user.password
+
+    return res.status(201).json({
+      user
+    })
   } catch (error) {
     next(error);
   }
@@ -33,6 +51,33 @@ export async function register(req, res, next) {
 export async function login(req, res, next) {
   try {
     // Your code here
+    const {email, password} = req.body;
+
+    const user = await User.findOne({email}).select('+password');
+
+    if (!user) {
+      return res.status(401).json({
+        error: { message: "Invalid credentials" }
+      })
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+      return res.status(401).json({
+        error: { message: "Invalid credentials" }
+      })
+    }
+
+    const token = signToken({userId: user._id, email: user.email, role: user.role});
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return res.status(200).json({
+      token,
+      user: userObj
+    })
   } catch (error) {
     next(error);
   }
@@ -47,6 +92,20 @@ export async function login(req, res, next) {
 export async function me(req, res, next) {
   try {
     // Your code here
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(401).json({
+        error: {message: "Invalid credentials"}
+      })
+    }
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return res.status(200).json({
+      user: userObj
+    })
   } catch (error) {
     next(error);
   }

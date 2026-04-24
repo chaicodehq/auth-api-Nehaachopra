@@ -1,4 +1,4 @@
-import { User } from '../models/user.model.js';
+// import { User } from '../models/user.model.js';
 import { verifyToken } from '../utils/jwt.js';
 
 /**
@@ -16,9 +16,24 @@ import { verifyToken } from '../utils/jwt.js';
  * 7. Call next()
  */
 export async function authenticate(req, res, next) {
+  // Your code here
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith("Bearer ")) {
+    return res.status(401).json({
+      error: { message: "No token provided" }
+    })
+  }
+
+  const token = header.split(" ")[1];
+
   try {
-    // Your code here
-  } catch (error) {
-    return res.status(401).json({ error: { message: 'Invalid token' } });
+    const user = verifyToken(token);
+    req.user = user;
+    next();
+  }
+  catch(err) {
+    return res.status(401).json({
+      error: { message: "Invalid token" }
+    })
   }
 }
